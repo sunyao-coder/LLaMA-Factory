@@ -384,6 +384,36 @@ class SwanLabArguments:
         metadata={"help": "The Lark(飞书) secret for SwanLab."},
     )
 
+@dataclass
+class MarginRewardArguments:
+    r"""Arguments pertaining to the margin reward model."""
+
+    margin_reward_model: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the margin reward model."},
+    )
+    margin_reward_model_adapters: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the adapters of the margin reward model."},
+    )
+    margin_reward_model_quantization_bit: Optional[int] = field(
+        default=None,
+        metadata={"help": "The number of bits to quantize the margin reward model."},
+    )
+
+@dataclass
+class MarginRewardPair:
+    r""""Arguments pertaining to the margin reward model pair."""
+    margin_reward_model: MarginRewardArguments
+    margin_reward_ref_model: MarginRewardArguments
+
+@dataclass
+class MarginRewardPairList:
+    r""""Arguments pertaining to the margin reward model pair list."""
+    margin_reward_model_list: list[MarginRewardPair] = field(
+        default_factory=list,
+        metadata={"help": "List of margin reward model pairs."},
+    )
 
 @dataclass
 class FinetuningArguments(
@@ -448,11 +478,44 @@ class FinetuningArguments(
         metadata={"help": "Whether or not to compute effective tokens per second."},
     )
 
+    modpo_args_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "Path to the modpo arguments file. "
+                "This is used to load the reward model and reference model for PPO training."
+            )
+        },
+    )
+
+
+    def _init_modpo_args(self):
+        if self.modpo_args_path is not None:
+            import json
+            def load_json(file_path):
+                with open(file_path, "r") as f:
+                    return json.load(f)
+            modpo_args = load_json(self.modpo_args_path)
+            margin_reward_model_list = modpo_args.get("margin_reward_model_list", None)
+            if margin_reward_model_list is not None:
+                self.margin_reward_model_list = [
+                    MarginRewardPair(
+                        MarginRewardArguments(**item[0]),
+                        MarginRewardArguments(**item[1])
+                    ) for item in margin_reward_model_list
+                ]
+            w_list = modpo_args.get("w_list", None)
+            if w_list is not None:
+                self.w_list = w_list
+        
+
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):
                 return [item.strip() for item in arg.split(",")]
             return arg
+        
+        self._init_modpo_args()
 
         self.freeze_trainable_modules: list[str] = split_arg(self.freeze_trainable_modules)
         self.freeze_extra_modules: Optional[list[str]] = split_arg(self.freeze_extra_modules)
