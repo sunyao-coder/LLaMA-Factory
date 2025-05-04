@@ -1,0 +1,14 @@
+{
+    "margin_reward_model_list": [
+        [
+            {
+                "margin_reward_model": "/data/LLM_Base_Model/Qwen2.5-0.5B-Instruct/",
+                "margin_reward_model_adapters": "saves/qwen2.5-0.5B-Instruct/lora/dpo"
+            },
+            {
+                "margin_reward_model": "/data/LLM_Base_Model/Qwen2.5-0.5B-Instruct/"
+            }
+        ]
+    ],
+    "w_list": [0.5, 0.5]
+}

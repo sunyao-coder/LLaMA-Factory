@@ -29,13 +29,13 @@ from ...model import load_model, load_tokenizer
 from ..trainer_utils import create_modelcard_and_push, create_ref_model
 from .trainer import MODPOTrainer
 from .utils import ImplicitRewardWrapper, RewardWrapperList
+from ...hparams import DataArguments, FinetuningArguments, MarginRewardArguments, MarginRewardPair, MarginRewardPairList
 
 
 
 if TYPE_CHECKING:
     from transformers import Seq2SeqTrainingArguments, TrainerCallback
 
-    from ...hparams import DataArguments, FinetuningArguments, MarginRewardArguments, MarginRewardPair, MarginRewardPairList
 
 def create_margin_reward_model(
     model_args: "ModelArguments",
@@ -44,8 +44,8 @@ def create_margin_reward_model(
     margin_reward_model_args = ModelArguments.copyfrom(
         model_args,
         model_name_or_path=margin_reward_args.margin_reward_model,
-        adapter_name_or_path=margin_reward_args.ref_model_adapters,
-        quantization_bit=margin_reward_args.ref_model_quantization_bit,
+        adapter_name_or_path=margin_reward_args.margin_reward_model_adapters,
+        quantization_bit=margin_reward_args.margin_reward_model_quantization_bit,
     )
     margin_reward_model_finetuning_args = FinetuningArguments()
     tokenizer = load_tokenizer(margin_reward_model_args)['tokenizer']
@@ -77,7 +77,7 @@ def create_margin_reward_model_list(
     return RewardWrapperList(reward_wrapper_list)
     
 
-def modpo(
+def run_modpo(
     model_args: "ModelArguments",
     data_args: "DataArguments",
     training_args: "Seq2SeqTrainingArguments",

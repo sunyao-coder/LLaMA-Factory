@@ -137,7 +137,7 @@ class MODPOTrainer(DPOTrainer):
                     wrapped_reward_model.model, evaluation_mode=True
                 )
             return wrapped_reward_model
-        self.wrapped_margin_reward_model_list = margin_reward_models(prepare)
+        self.wrapped_margin_reward_model_list = margin_reward_models.map(prepare)
         self.w = torch.tensor(self.w).to(self.accelerator.device)
 
         assert len(self.wrapped_margin_reward_model_list) == len(self.w) - 1
@@ -176,6 +176,7 @@ class MODPOTrainer(DPOTrainer):
         chosen_margin_reward: torch.FloatTensor,
         rejected_margin_reward: torch.FloatTensor,
     ) -> tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
+        
         chosen_rewards   = (1/self.w[0])*(self.beta * (policy_chosen_logps   - reference_chosen_logps)   - chosen_margin_reward   @ self.w[1:])
         rejected_rewards = (1/self.w[0])*(self.beta * (policy_rejected_logps - reference_rejected_logps) - rejected_margin_reward @ self.w[1:])
 
@@ -243,8 +244,6 @@ class MODPOTrainer(DPOTrainer):
         self, model: "PreTrainedModel", batch: dict[str, "torch.Tensor"]
     ) -> tuple[Optional["torch.Tensor"], Optional["torch.Tensor"]]:
         r"""Compute log probabilities of the reference model."""
-        if not self.finetuning_args.use_ref_model:
-            return None, None
 
         if self.ref_model is None:
             ref_model = model
@@ -265,7 +264,7 @@ class MODPOTrainer(DPOTrainer):
         r"""Compute log probabilities of margin reward models."""
         chosen_margin_rewards = []
         rejected_margin_rewards = []
-        for mr_model_pair in self.wrapped_margin_reward_model_list:
+        for mr_model_pair in self.wrapped_margin_reward_model_list.reward_wrapper_list:
             mr_model = mr_model_pair.model
             mr_model_context = nullcontext()
             with torch.no_grad(), mr_model_context:
@@ -275,7 +274,7 @@ class MODPOTrainer(DPOTrainer):
             mr_ref_model_context = nullcontext()
             with torch.no_grad(), mr_ref_model_context:
                 margin_ref_chosen_logps, margin_ref_rejected_logps, *_ = self.concatenated_forward(mr_ref_model, batch)
-
+            
             chosen_margin_rewards.append(self.beta * (margin_chosen_logps - margin_ref_chosen_logps))
             rejected_margin_rewards.append(self.beta * (margin_rejected_logps - margin_ref_rejected_logps))
         

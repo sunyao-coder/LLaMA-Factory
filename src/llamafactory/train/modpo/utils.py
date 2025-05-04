@@ -41,6 +41,9 @@ class ImplicitRewardWrapper(RewardWrapperBase):
     model: PreTrainedModel
     ref_model: PreTrainedModel
 
+    def __call__(self, inputs: list) -> None:
+        pass
+
 
 if __name__ == "__main__":
     from transformers import AutoModelForCausalLM, AutoTokenizer

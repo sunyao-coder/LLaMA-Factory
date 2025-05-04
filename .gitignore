@@ -175,4 +175,7 @@ saves/
 output/
 wandb/
 swanlog/
+models/
 generated_predictions.jsonl
+test.sh 
+tmp.py
